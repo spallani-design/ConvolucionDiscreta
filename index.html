@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convolución Discreta en Telecomunicaciones</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body)"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Fira+Code:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c:#22d3ee;
+  --p:#c084fc;
+  --g:#4ade80;
+  --y:#fde047;
+  --r:#fb7185;
+  --bg:#070b16;
+  --card:rgba(255,255,255,.06);
+  --card-border:rgba(255,255,255,.14);
+}
+body{
+  background:
+    radial-gradient(circle at 18% 15%,rgba(34,211,238,.09),transparent 42%),
+    radial-gradient(circle at 82% 80%,rgba(192,132,252,.10),transparent 45%),
+    linear-gradient(180deg,#060913 0%,#0b1124 100%);
+}
+.reveal{
+  font-family:'Fredoka',sans-serif;
+  font-size:28px;
+  color:#f1f5f9;
+  font-variant-numeric:tabular-nums;
+}
+.reveal .slide-background{background:transparent}
+.reveal h1,.reveal h2,.reveal h3{
+  font-family:'Fredoka',sans-serif;
+  text-transform:none;
+  color:#fff;
+  font-weight:700;
+  letter-spacing:-.015em;
+  text-shadow:0 4px 24px rgba(0,0,0,.45);
+}
+.reveal h2{font-size:1.52em;margin-bottom:.32em}
+.reveal p{margin:.32em 0;line-height:1.35}
+.big{font-size:1.42em}
+.c{color:var(--c)}.p{color:var(--p)}.g{color:var(--g)}.y{color:var(--y)}.r{color:var(--r)}
+.mono{font-family:'Fira Code',monospace;font-variant-numeric:tabular-nums}
+.hint{font-size:.53em;color:#94a3b8}
+
+/* Tarjetas glassmorphism */
+.card{
+  background:linear-gradient(160deg,rgba(255,255,255,.095),rgba(15,23,42,.55));
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1.5px solid var(--card-border);
+  border-top-color:rgba(255,255,255,.28);
+  border-radius:20px;
+  padding:15px 20px;
+  box-shadow:0 12px 32px rgba(0,0,0,.38);
+  transition:transform .22s cubic-bezier(.2,.9,.3,1),border-color .22s,box-shadow .22s;
+}
+.card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.3);box-shadow:0 16px 36px rgba(0,0,0,.48)}
+.card.bc{border-color:rgba(34,211,238,.38)}
+.card.bp{border-color:rgba(192,132,252,.38)}
+.card.bg{border-color:rgba(74,222,128,.38)}
+.card.by{border-color:rgba(253,224,71,.38)}
+.card.interactive{cursor:pointer}
+.card.interactive.active{transform:translateY(-4px) scale(1.03);box-shadow:0 0 24px rgba(34,211,238,.28)}
+
+/* Tarjetas interactivas 3D Flip (4 movimientos) */
+.flip-card{
+  width:228px;height:305px;
+  perspective:1100px;
+  cursor:pointer;
+  user-select:none;
+}
+.flip-inner{
+  position:relative;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform .68s cubic-bezier(.28,1.32,.38,1);
+}
+.flip-card:hover .flip-inner{transform:translateY(-5px) rotateY(7deg)}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-card.flipped:hover .flip-inner{transform:translateY(-5px) rotateY(173deg)}
+
+.flip-face{
+  position:absolute;inset:0;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:20px;
+  padding:15px 14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  background:linear-gradient(165deg,rgba(255,255,255,.11),rgba(13,19,38,.88));
+  backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,.16);
+  border-top-color:rgba(255,255,255,.32);
+  box-shadow:0 14px 30px rgba(0,0,0,.45);
+  box-sizing:border-box;
+}
+.flip-back{
+  transform:rotateY(180deg);
+  background:linear-gradient(165deg,rgba(15,23,42,.96),rgba(8,12,26,.99));
+  padding:12px;
+}
+.flip-card.by .flip-face{border-color:rgba(253,224,71,.45)}
+.flip-card.bc .flip-face{border-color:rgba(34,211,238,.45)}
+.flip-card.bp .flip-face{border-color:rgba(192,132,252,.45)}
+.flip-card.bg .flip-face{border-color:rgba(74,222,128,.45)}
+
+.step-tag{
+  font-family:'Fira Code',monospace;font-size:.41em;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 10px;border-radius:999px;
+  background:rgba(255,255,255,.08);color:#cbd5e1;
+}
+.flip-tap{
+  font-size:.42em;color:#cbd5e1;
+  background:rgba(255,255,255,.07);
+  border:1px dashed rgba(255,255,255,.22);
+  padding:4px 10px;border-radius:999px;
+  transition:background .2s,color .2s,border-color .2s;
+}
+.flip-card:hover .flip-tap{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.4)}
+.mini-svg{
+  width:100%;height:122px;
+  border-radius:12px;
+  background:rgba(0,0,0,.5);
+  border:1px solid rgba(255,255,255,.09);
+}
+
+.row{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;align-items:center}
+.emoji{font-size:2.05em;display:block;margin-bottom:4px}
+.bounce{display:inline-block;animation:bounce 1.2s infinite}
+@keyframes bounce{50%{transform:translateY(-9px)}}
+
+.reveal .fragment.pop-in{opacity:0;transform:scale(.45);transition:all .45s cubic-bezier(.3,1.6,.5,1)}
+.reveal .fragment.pop-in.visible{opacity:1;transform:scale(1)}
+
+/* Botones y controles */
+.btn{
+  font-family:inherit;font-weight:600;font-size:.56em;
+  border:0;border-radius:13px;padding:9px 16px;
+  color:#07101f;background:var(--c);cursor:pointer;
+  box-shadow:0 4px 14px rgba(34,211,238,.25);
+  transition:transform .15s,box-shadow .15s,background .15s,opacity .15s;
+}
+.btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 6px 20px rgba(34,211,238,.42)}
+.btn:active{transform:scale(.97)}
+.btn.alt{background:var(--p);box-shadow:0 4px 14px rgba(192,132,252,.25)}
+.btn.alt:hover{box-shadow:0 6px 20px rgba(192,132,252,.42)}
+.btn.ok{background:var(--g);box-shadow:0 4px 14px rgba(74,222,128,.25)}
+.btn.ok:hover{box-shadow:0 6px 20px rgba(74,222,128,.42)}
+.btn.ghost{background:rgba(255,255,255,.09);color:#f8fafc;box-shadow:none;border:1px solid rgba(255,255,255,.15)}
+.btn.ghost:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.28)}
+.btn.sm{font-size:.47em;padding:6px 11px;border-radius:10px}
+.btn.xs{font-size:.43em;padding:4px 9px;border-radius:8px}
+.btn.on{background:var(--y);color:#0b1020;box-shadow:0 4px 14px rgba(253,224,71,.38)}
+
+.pill{
+  display:inline-block;font-size:.46em;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;padding:5px 15px;border-radius:999px;
+  background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.36);color:var(--c);
+  margin-bottom:10px;
+}
+
+.link{display:flex;align-items:center;justify-content:center;gap:11px;font-size:1.3em;margin:8px 0}
+.echo{border-radius:14px;padding:.15em .45em;background:rgba(192,132,252,.18);border:1px solid rgba(192,132,252,.35);font-size:.73em}
+.legend{margin:3px 0}
+.legend span{margin:0 10px;font-size:.54em;font-weight:500}
+#sim-expl,.out{font-size:.56em;min-height:2.4em;margin-top:5px;line-height:1.4}
+
+canvas{
+  max-width:100%;height:auto;border-radius:16px;
+  background:rgba(5,9,20,.72);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.28);
+}
+
+input.seq{
+  font-family:'Fira Code',monospace;font-size:.54em;width:128px;
+  background:rgba(0,0,0,.55);color:var(--c);
+  border:1.5px solid #475569;border-radius:10px;padding:6px 9px;
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+input.seq:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+input[type=range]{accent-color:var(--c);width:125px;cursor:pointer;vertical-align:middle}
+.ctrl{font-size:.54em}
+.ctrl label{background:rgba(255,255,255,.05);padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.09)}
+
+/* Quiz */
+.opt{
+  display:block;width:100%;text-align:left;margin:8px 0;
+  font-family:inherit;font-size:.58em;color:#f8fafc;
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.11);
+  border-radius:14px;padding:10px 16px;cursor:pointer;transition:all .15s;
+}
+.opt:hover{border-color:var(--c);background:rgba(34,211,238,.11);transform:translateX(6px)}
+.opt.ok{background:rgba(74,222,128,.22);border-color:var(--g);color:#fff}
+.opt.bad{background:rgba(251,113,133,.22);border-color:var(--r);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.xp{height:14px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden;width:62%;margin:0 auto;border:1px solid rgba(255,255,255,.12)}
+.xp i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c),var(--p),var(--g));transition:width .55s cubic-bezier(.2,.9,.3,1)}
+.reveal .progress{height:4px;background:rgba(255,255,255,.08)}
+.reveal .progress span{background:linear-gradient(90deg,var(--c),var(--p),var(--g))}
+
+/* HUD superior */
+#hud-left{
+  position:fixed;top:12px;left:16px;z-index:30;
+  font-size:13px;font-weight:600;letter-spacing:.03em;
+  color:#e2e8f0;background:rgba(15,23,42,.75);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.14);border-radius:999px;
+  padding:7px 15px;pointer-events:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+#hud-right{position:fixed;top:10px;right:14px;z-index:30;display:flex;gap:8px}
+.hud-btn{
+  font-size:16px;background:rgba(15,23,42,.78);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.16);border-radius:50%;
+  width:40px;height:40px;cursor:pointer;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,background .15s,border-color .15s;
+}
+.hud-btn:hover{transform:scale(1.08);background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.32)}
+
+/* Imágenes 2D */
+.im{width:215px;height:215px;image-rendering:pixelated;border:2px solid rgba(255,255,255,.22);cursor:crosshair}
+#kgrid{display:grid;grid-template-columns:repeat(3,54px);gap:5px}
+#kgrid input{
+  width:54px;font-family:'Fira Code',monospace;font-size:.52em;text-align:center;
+  color:var(--y);background:rgba(0,0,0,.58);border:1.5px solid #475569;
+  border-radius:9px;padding:6px 2px;outline:none;
+}
+#kgrid input:focus{border-color:var(--y)}
+#patch-grid{display:grid;grid-template-columns:repeat(3,34px);gap:3px}
+#patch-grid div{
+  width:34px;height:28px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fira Code',monospace;font-size:.38em;font-weight:600;
+  border:1px solid rgba(255,255,255,.15);
+}
+.badge-stat{
+  display:inline-block;padding:4px 11px;border-radius:9px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
+  font-family:'Fira Code',monospace;font-size:.9em;
+}
+.f-term{cursor:pointer;padding:2px 6px;border-radius:8px;transition:background .15s}
+.f-term:hover{background:rgba(255,255,255,.12)}
+
+/* Integrantes en portada */
+.authors-wrap{
+  max-width:760px;
+  margin:12px auto 4px;
+}
+.authors-title{
+  font-size:.43em;
+  font-weight:600;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:#94a3b8;
+  margin-bottom:7px;
+}
+.authors-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 14px;
+}
+.author-chip{
+  background:linear-gradient(160deg,rgba(255,255,255,.085),rgba(15,23,42,.58));
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.15);
+  border-top-color:rgba(255,255,255,.26);
+  border-radius:12px;
+  padding:7px 14px;
+  font-size:.54em;
+  font-weight:500;
+  color:#f1f5f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  box-shadow:0 6px 18px rgba(0,0,0,.28);
+}
+.author-chip i{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  display:inline-block;
+  flex-shrink:0;
+}
+@media (prefers-reduced-motion:reduce){.bounce{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="hud-left">01 · Portada</div>
+<div id="hud-right">
+  <button class="hud-btn" id="b-ov" title="Mapa de diapositivas (Esc)">⊞</button>
+  <button class="hud-btn" id="snd" title="Activar / silenciar sonido">🔊</button>
+</div>
+
+<div class="reveal"><div class="slides">
+
+<!-- 1 PORTADA -->
+<section data-mod="01 · Portada" data-background-gradient="radial-gradient(circle at 28% 22%,#1e1b4b,#070b16 72%)">
+  <div class="pill">Señales y Sistemas · Telecomunicaciones</div>
+  <h1 style="font-size:2.35em;margin:.12em 0">Convolución <span class="c">Discreta</span></h1>
+  <p class="big" style="color:#cbd5e1">📡 Cómo viaja tu señal por el aire 🏙️</p>
+  <canvas id="cover" width="700" height="115" style="cursor:pointer" title="Mueve el cursor o haz clic para emitir un pulso"></canvas>
+  <div class="authors-wrap">
+    <div class="authors-title">👥 Integrantes</div>
+    <div class="authors-grid">
+      <div class="author-chip"><i style="background:var(--c)"></i><span>Stip Maycol Pallani Ihue</span></div>
+      <div class="author-chip"><i style="background:var(--p)"></i><span>Joshua Barraza Medina</span></div>
+      <div class="author-chip"><i style="background:var(--g)"></i><span>Jesus Villanueva Arredondo</span></div>
+      <div class="author-chip"><i style="background:var(--y)"></i><span>Randall Arias Huamani</span></div>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <button class="btn" id="b-start">🚀 Comenzar experiencia</button>
+  </div>
+  <p class="hint" style="margin-top:10px"><span class="bounce">👉</span> Usa las flechas o toca la pantalla · <b>F</b> pantalla completa · <b>Esc</b> vista general</p>
+</section>
+
+<!-- 2 HISTORIA -->
+<section id="story" data-mod="02 · Intuición Física">
+  <h2>Tu señal rebota por la ciudad 🏙️</h2>
+  <div class="link">
+    <span>📡</span><span class="fragment pop-in">➜</span>
+    <span class="fragment pop-in echo">🏢 camino directo</span>
+    <span class="fragment pop-in echo">🏢 eco medio</span>
+    <span class="fragment pop-in echo">🏙️ eco lejano</span>
+    <span class="fragment pop-in">➜ 📱</span>
+  </div>
+  <canvas id="cityc" width="780" height="145"></canvas>
+  <div style="margin:6px 0">
+    <button class="btn sm ghost" id="b-pulse">📡 Disparar pulso de prueba</button>
+  </div>
+  <p class="fragment">La antena envía <b class="c">un pulso</b>, pero el celular recibe <b class="p">varias copias</b> que rebotan en edificios.</p>
+  <p class="fragment">Cada copia llega <b class="y">más tarde y más débil</b>, y el celular las <b class="g">suma</b>: eso es la <b>convolución</b> 🎉</p>
+</section>
+
+<!-- 3 PERSONAJES -->
+<section id="chars" data-mod="03 · Los Elementos">
+  <h2>Los personajes del juego 🎭</h2>
+  <p class="hint">Toca cada tarjeta para resaltar su rol en la ecuación:</p>
+  <div class="row" style="margin-top:12px">
+    <div class="card bc interactive fragment pop-in" data-role="x" style="min-width:245px">
+      <span class="emoji">📡</span>
+      <b class="c mono" style="font-size:1.15em">x[n]</b><br>
+      <b>Bits transmitidos</b><br>
+      <span class="hint">(la señal de entrada)</span>
+    </div>
+    <div class="card bp interactive fragment pop-in" data-role="h" style="min-width:245px">
+      <span class="emoji">🏙️</span>
+      <b class="p mono" style="font-size:1.15em">h[n]</b><br>
+      <b>El canal</b><br>
+      <span class="hint">(cómo rebota y se atenúa)</span>
+    </div>
+    <div class="card bg interactive fragment pop-in" data-role="y" style="min-width:245px">
+      <span class="emoji">📱</span>
+      <b class="g mono" style="font-size:1.15em">y[n]</b><br>
+      <b>Señal recibida</b><br>
+      <span class="hint">(lo que llega al celular)</span>
+    </div>
+  </div>
+  <div class="card fragment" style="display:inline-block;margin-top:20px;padding:10px 28px">
+    <span class="big">\( \textcolor{#4ade80}{y[n]} = \textcolor{#22d3ee}{x[n]} * \textcolor{#c084fc}{h[n]} \)</span>
+  </div>
+  <div id="char-note" class="hint mono" style="min-height:1.4em;margin-top:8px">El operador <b>*</b> significa convolución (no multiplicación simple).</div>
+</section>
+
+<!-- 4 FÓRMULA -->
+<section data-mod="04 · La Fórmula">
+  <h2>La fórmula, sin miedo 🧙</h2>
+  <div class="card" style="font-size:1.18em;display:inline-block;padding:15px 32px;margin-bottom:10px">
+    \( \textcolor{#4ade80}{y[n]} = \sum_{k=-\infty}^{\infty} \textcolor{#22d3ee}{x[k]} \cdot \textcolor{#c084fc}{h[n-k]} \)
+  </div>
+  <div class="row" style="margin-top:10px;max-width:880px;margin-left:auto;margin-right:auto">
+    <div class="card bc fragment" style="flex:1;min-width:235px">
+      <b class="c mono">x[k]</b>
+      <p style="font-size:.64em">Cada bit que enviaste en el instante <b>k</b>.</p>
+    </div>
+    <div class="card bp fragment" style="flex:1;min-width:235px">
+      <b class="p mono">h[n − k]</b>
+      <p style="font-size:.64em">Cuánto de ese bit sobrevive al llegar en <b>n</b>.</p>
+    </div>
+    <div class="card bg fragment" style="flex:1;min-width:235px">
+      <b class="g mono">Σ (Suma)</b>
+      <p style="font-size:.64em">El receptor mezcla todo lo que coincide en <b>n</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 CUATRO PASOS CON TARJETAS GIRATORIAS 3D -->
+<section id="steps" data-mod="05 · Mecánica Paso a Paso">
+  <h2>Los 4 movimientos 🕹️</h2>
+  <p class="hint" style="margin-bottom:10px">Haz clic en cada tarjeta (o pulsa <b>1–4</b>) para voltearla · Ejemplo con <span class="mono c">x = [1, 2]</span> y <span class="mono p">h = [1, 0.5]</span> en <span class="mono y">n = 1</span>:</p>
+
+  <div class="row" style="margin-top:6px">
+    <!-- TARJETA 1: VOLTEA -->
+    <div class="flip-card by" data-step="0">
+      <div class="flip-inner">
+        <div class="flip-face flip-front">
+          <span class="step-tag">Movimiento 1</span>
+          <div>
+            <span class="emoji">🔄</span>
+            <b class="y" style="font-size:1.05em">1. Voltea</b><br>
+            <span class="hint mono">h[k] → h[−k]</span>
+          </div>
+          <span class="flip-tap">👆 Toca para voltear</span>
+        </div>
+        <div class="flip-face flip-back">
+          <b class="y" style="font-size:.63em">1. Reflejo en espejo</b>
+          <svg class="mini-svg" viewBox="0 0 200 115">
+            <line x1="12" y1="88" x2="188" y2="88" stroke="#475569" stroke-width="1.5"/>
+            <text x="50" y="16" fill="#c084fc" font-size="11" font-family="Fira Code" text-anchor="middle">h[k]</text>
+            <line x1="35" y1="88" x2="35" y2="38" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="35" cy="38" r="4.5" fill="#c084fc"/>
+            <text x="35" y="30" fill="#fff" font-size="10" font-family="Fira Code" text-anchor="middle">1</text>
+            <line x1="65" y1="88" x2="65" y2="62" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="65" cy="62" r="4.5" fill="#c084fc"/>
+            <text x="65" y="54" fill="#fff" font-size="10" font-family="Fira Code" text-anchor="middle">.5</text>
+            <text x="35" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">0</text>
+            <text x="65" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">1</text>
+
+            <text x="100" y="60" fill="#fde047" font-size="18" text-anchor="middle">⇄</text>
+
+            <text x="150" y="16" fill="#fde047" font-size="11" font-family="Fira Code" text-anchor="middle">h[−k]</text>
+            <line x1="135" y1="88" x2="135" y2="62" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="135" cy="62" r="4.5" fill="#c084fc"/>
+            <text x="135" y="54" fill="#fff" font-size="10" font-family="Fira Code" text-anchor="middle">.5</text>
+            <line x1="165" y1="88" x2="165" y2="38" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="165" cy="38" r="4.5" fill="#c084fc"/>
+            <text x="165" y="30" fill="#fff" font-size="10" font-family="Fira Code" text-anchor="middle">1</text>
+            <text x="135" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">-1</text>
+            <text x="165" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">0</text>
+          </svg>
+          <span class="hint">La cola pasa adelante</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETA 2: DESLIZA -->
+    <div class="flip-card bc" data-step="1">
+      <div class="flip-inner">
+        <div class="flip-face flip-front">
+          <span class="step-tag">Movimiento 2</span>
+          <div>
+            <span class="emoji">➡️</span>
+            <b class="c" style="font-size:1.05em">2. Desliza</b><br>
+            <span class="hint mono">mueve n pasos</span>
+          </div>
+          <span class="flip-tap">👆 Toca para voltear</span>
+        </div>
+        <div class="flip-face flip-back">
+          <b class="c" style="font-size:.63em">2. Desplaza n = 1</b>
+          <svg class="mini-svg" viewBox="0 0 200 115">
+            <line x1="16" y1="88" x2="184" y2="88" stroke="#475569" stroke-width="1.5"/>
+            <text x="100" y="16" fill="#fde047" font-size="11" font-family="Fira Code" text-anchor="middle">desliza 1 paso ➜</text>
+            <line x1="57" y1="88" x2="57" y2="56" stroke="#22d3ee" stroke-width="3.5"/>
+            <circle cx="57" cy="56" r="4.5" fill="#22d3ee"/>
+            <text x="53" y="48" fill="#22d3ee" font-size="10" font-family="Fira Code" text-anchor="middle">1</text>
+            <line x1="73" y1="88" x2="73" y2="70" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="73" cy="70" r="4.5" fill="#c084fc"/>
+            <text x="77" y="62" fill="#c084fc" font-size="10" font-family="Fira Code" text-anchor="middle">.5</text>
+            <text x="65" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">k=0</text>
+            <line x1="127" y1="88" x2="127" y2="30" stroke="#22d3ee" stroke-width="3.5"/>
+            <circle cx="127" cy="30" r="4.5" fill="#22d3ee"/>
+            <text x="123" y="23" fill="#22d3ee" font-size="10" font-family="Fira Code" text-anchor="middle">2</text>
+            <line x1="143" y1="88" x2="143" y2="56" stroke="#c084fc" stroke-width="3.5"/>
+            <circle cx="143" cy="56" r="4.5" fill="#c084fc"/>
+            <text x="147" y="48" fill="#c084fc" font-size="10" font-family="Fira Code" text-anchor="middle">1</text>
+            <text x="135" y="103" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">k=1</text>
+          </svg>
+          <span class="hint">Se alinea <span class="p">h[1−k]</span> con <span class="c">x[k]</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETA 3: MULTIPLICA -->
+    <div class="flip-card bp" data-step="2">
+      <div class="flip-inner">
+        <div class="flip-face flip-front">
+          <span class="step-tag">Movimiento 3</span>
+          <div>
+            <span class="emoji">✖️</span>
+            <b class="p" style="font-size:1.05em">3. Multiplica</b><br>
+            <span class="hint mono">los que coinciden</span>
+          </div>
+          <span class="flip-tap">👆 Toca para voltear</span>
+        </div>
+        <div class="flip-face flip-back">
+          <b class="p" style="font-size:.63em">3. Multiplica parejas</b>
+          <svg class="mini-svg" viewBox="0 0 200 115">
+            <rect x="12" y="14" width="82" height="87" rx="9" fill="rgba(253,224,71,.12)" stroke="rgba(253,224,71,.4)"/>
+            <text x="53" y="30" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">en k = 0</text>
+            <text x="53" y="54" font-size="12" font-family="Fira Code" text-anchor="middle">
+              <tspan fill="#22d3ee">1</tspan><tspan fill="#fff"> × </tspan><tspan fill="#c084fc">0.5</tspan>
+            </text>
+            <line x1="26" y1="64" x2="80" y2="64" stroke="rgba(255,255,255,.2)"/>
+            <text x="53" y="86" fill="#fde047" font-size="14" font-weight="bold" font-family="Fira Code" text-anchor="middle">= 0.5</text>
+
+            <rect x="106" y="14" width="82" height="87" rx="9" fill="rgba(253,224,71,.12)" stroke="rgba(253,224,71,.4)"/>
+            <text x="147" y="30" fill="#94a3b8" font-size="10" font-family="Fira Code" text-anchor="middle">en k = 1</text>
+            <text x="147" y="54" font-size="12" font-family="Fira Code" text-anchor="middle">
+              <tspan fill="#22d3ee">2</tspan><tspan fill="#fff"> × </tspan><tspan fill="#c084fc">1.0</tspan>
+            </text>
+            <line x1="120" y1="64" x2="174" y2="64" stroke="rgba(255,255,255,.2)"/>
+            <text x="147" y="86" fill="#fde047" font-size="14" font-weight="bold" font-family="Fira Code" text-anchor="middle">= 2.0</text>
+          </svg>
+          <span class="hint">Solo donde ambos existen</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETA 4: SUMA -->
+    <div class="flip-card bg" data-step="3">
+      <div class="flip-inner">
+        <div class="flip-face flip-front">
+          <span class="step-tag">Movimiento 4</span>
+          <div>
+            <span class="emoji">➕</span>
+            <b class="g" style="font-size:1.05em">4. Suma</b><br>
+            <span class="hint mono">¡obtienes y[n]!</span>
+          </div>
+          <span class="flip-tap">👆 Toca para voltear</span>
+        </div>
+        <div class="flip-face flip-back">
+          <b class="g" style="font-size:.63em">4. Suma total en n = 1</b>
+          <svg class="mini-svg" viewBox="0 0 200 115">
+            <rect x="12" y="38" width="44" height="28" rx="7" fill="rgba(253,224,71,.16)" stroke="#fde047"/>
+            <text x="34" y="56" fill="#fde047" font-size="12" font-weight="bold" font-family="Fira Code" text-anchor="middle">0.5</text>
+
+            <text x="68" y="57" fill="#fff" font-size="15" font-weight="bold" text-anchor="middle">+</text>
+
+            <rect x="80" y="38" width="44" height="28" rx="7" fill="rgba(253,224,71,.16)" stroke="#fde047"/>
+            <text x="102" y="56" fill="#fde047" font-size="12" font-weight="bold" font-family="Fira Code" text-anchor="middle">2.0</text>
+
+            <text x="136" y="57" fill="#fff" font-size="15" font-weight="bold" text-anchor="middle">=</text>
+
+            <line x1="150" y1="90" x2="188" y2="90" stroke="#475569" stroke-width="1.5"/>
+            <line x1="169" y1="90" x2="169" y2="28" stroke="#4ade80" stroke-width="4.5"/>
+            <circle cx="169" cy="28" r="6" fill="#4ade80"/>
+            <text x="169" y="18" fill="#4ade80" font-size="13" font-weight="bold" font-family="Fira Code" text-anchor="middle">2.5</text>
+            <text x="169" y="105" fill="#cbd5e1" font-size="10" font-family="Fira Code" text-anchor="middle">y[1]</text>
+          </svg>
+          <span class="hint"><b class="g">y[1] = 2.5</b> · ¡Repite para cada n!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:14px">
+    <button class="btn sm alt" id="b-seq-flip">▶️ Voltear en secuencia (1 → 4)</button>
+    <button class="btn sm ghost" id="b-all-flip">🔄 Voltear / reiniciar todas</button>
+  </div>
+</section>
+
+<!-- 6 SIMULADOR CON DOS PISTAS ALINEADAS -->
+<section id="sim" data-mod="06 · Simulador Interactivo">
+  <h2>Míralo moverse 🎬</h2>
+  <div class="legend">
+    <span class="c">● x[k] arriba</span>
+    <span class="p">● h[n−k] abajo (volteado)</span>
+    <span class="y">▮ coinciden y se multiplican</span>
+    <span class="g">● y[n] salida (clic para saltar)</span>
+  </div>
+  <canvas id="simc" width="860" height="255" style="cursor:pointer" title="Haz clic en cualquier punto de y[n] a la derecha para saltar a ese instante n"></canvas>
+  <div id="sim-expl" class="mono"></div>
+  <div class="row" style="margin-top:4px">
+    <button class="btn ghost" id="b-prev" title="Paso anterior">⬅️</button>
+    <button class="btn" id="b-play">⏸ Pausa</button>
+    <button class="btn ghost" id="b-next" title="Siguiente paso">➡️</button>
+    <button class="btn sm ghost" id="b-spd" title="Velocidad de reproducción">1×</button>
+    <input class="seq" id="ix" value="1, 0, 1, 1" title="Secuencia x[n]">
+    <input class="seq" id="ih" value="1, 0.5, 0.25" title="Respuesta h[n]">
+    <button class="btn alt" id="b-upd">✨ Aplicar</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <span class="hint">Ejemplos rápidos:</span>
+    <button class="btn sm ghost preset-sim" data-x="1, 0, 1, 1" data-h="1, 0.5, 0.25">🏙️ Ciudad</button>
+    <button class="btn sm ghost preset-sim" data-x="1, 0, 1, 1" data-h="1">⚡ Impulso δ[n]</button>
+    <button class="btn sm ghost preset-sim" data-x="1, 1, 0, 1" data-h="0, 0, 0.8">⏳ Eco puro</button>
+    <button class="btn sm ghost preset-sim" data-x="0, 1, 1, 1, 0" data-h="0.33, 0.33, 0.33">📊 Promedio</button>
+  </div>
+</section>
+
+<!-- 7 CANAL MULTITRAYECTO -->
+<section id="chan" data-mod="07 · Interferencia ISI y Ecualización">
+  <h2>¿Se equivoca el celular? 📶</h2>
+  <p class="hint">Sube la fuerza del eco hasta que un <b>0</b> cruce el umbral (0.5). Luego activa el <b>ecualizador</b> para rescatar los bits.</p>
+  <canvas id="cc" width="860" height="245"></canvas>
+  <div class="row ctrl" style="margin-top:6px">
+    <label>Fuerza eco <input type="range" id="ca" min="0" max="1" step="0.05" value="0.35"> <b class="y" id="cav">0.35</b></label>
+    <label>Retraso <input type="range" id="cd" min="1" max="3" step="1" value="1"> <b class="y" id="cdv">1</b></label>
+    <button class="btn ghost" id="b-eq">🎛️ Ecualizador: OFF</button>
+    <button class="btn alt" id="b-bits">🎲 Nuevos bits</button>
+  </div>
+  <div class="out mono" id="cout"></div>
+</section>
+
+<!-- 8 AUDIO -->
+<section id="aud" data-mod="08 · Convolución en Audio">
+  <h2>¡Escucha el canal! 🔊</h2>
+  <p class="hint">Tres notas viajan por un canal con eco real (<span class="mono">ConvolverNode</span>). Compara cómo suenan con y sin convolución.</p>
+  <canvas id="ac" width="860" height="190"></canvas>
+  <div class="legend"><span class="c">▮ notas originales</span><span class="p">▮ ecos del canal h[n]</span><span class="y">│ lectura en tiempo real</span></div>
+  <div class="row ctrl" style="margin-top:4px">
+    <label>Fuerza <input type="range" id="aa" min="0" max="1" step="0.05" value="0.6"> <b class="y" id="aav"></b></label>
+    <label>Retraso <input type="range" id="ad" min="60" max="480" step="10" value="240"> <b class="y" id="adv"></b></label>
+    <button class="btn sm ghost preset-aud" data-a="0.35" data-d="90">🏠 Sala</button>
+    <button class="btn sm ghost preset-aud" data-a="0.65" data-d="240">🏙️ Calle</button>
+    <button class="btn sm ghost preset-aud" data-a="0.85" data-d="420">🏔️ Cañón</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button class="btn ghost" id="b-dry">🔈 Sin canal</button>
+    <button class="btn alt" id="b-wet">🏙️ Con canal (convolución)</button>
+  </div>
+</section>
+
+<!-- 9 RESULTADO -->
+<section id="res" data-mod="09 · Largo de la Señal">
+  <h2>Resultado del ejemplo 🏁</h2>
+  <p class="mono" style="font-size:.78em">x = {1, 0, 1, 1} &nbsp;<span class="y">*</span>&nbsp; h = {1, 0.5, 0.25}</p>
+  <div class="row mono" style="font-size:1.02em;margin:14px 0" id="res-cards">
+    <span class="card interactive fragment pop-in" data-calc="y[0] = 1 × 1 = 1">1</span>
+    <span class="card interactive fragment pop-in" data-calc="y[1] = 1×0.5 + 0×1 = 0.5">0.5</span>
+    <span class="card bg interactive fragment pop-in g" data-calc="y[2] = 1×0.25 + 0×0.5 + 1×1 = 1.25">1.25</span>
+    <span class="card bg interactive fragment pop-in g" data-calc="y[3] = 0×0.25 + 1×0.5 + 1×1 = 1.5">1.5</span>
+    <span class="card interactive fragment pop-in" data-calc="y[4] = 1×0.25 + 1×0.5 = 0.75">0.75</span>
+    <span class="card interactive fragment pop-in" data-calc="y[5] = 1 × 0.25 = 0.25">0.25</span>
+  </div>
+  <div id="res-detail" class="mono y" style="font-size:.58em;min-height:1.5em">Toca cualquier resultado para ver qué productos lo formaron</div>
+  <p class="fragment">Enviaste <b>4</b> bits y recibes <b class="y">6 valores</b>: <span class="mono">L = 4 + 3 − 1 = 6</span> 🎢</p>
+  <p class="hint fragment">Los bits se ensanchan y se superponen entre sí: es la <b>interferencia entre símbolos (ISI)</b>.</p>
+</section>
+
+<!-- 10 APLICACIONES -->
+<section id="apps" data-mod="10 · Aplicaciones Reales">
+  <h2>Convolución en telecomunicaciones 🌍</h2>
+  <p class="hint">Toca una aplicación para ver cómo se usa en sistemas reales:</p>
+  <div class="row" style="margin-top:12px">
+    <div class="card bc interactive fragment pop-in" data-app="En 4G/5G y WiFi, el prefijo cíclico convierte la convolución lineal del aire en circular para decodificar sin interferencia." style="width:215px"><span class="emoji">📶</span><b>Canal inalámbrico</b><br><span class="hint">WiFi, 4G y 5G</span></div>
+    <div class="card bg interactive fragment pop-in" data-app="Los filtros FIR aplican una respuesta h[n] diseñada para dejar pasar la banda útil y rechazar el ruido fuera de canal." style="width:215px"><span class="emoji">🧹</span><b>Filtros digitales</b><br><span class="hint">eliminan ruido</span></div>
+    <div class="card bp interactive fragment pop-in" data-app="El ecualizador estima h[n] usando pilotos conocidos y aplica un filtro inverso para limpiar los rebotes." style="width:215px"><span class="emoji">🎛️</span><b>Ecualizadores</b><br><span class="hint">cancelan ecos</span></div>
+    <div class="card by interactive fragment pop-in" data-app="El filtro adaptado convoluciona la señal recibida con una copia invertida del pulso emitido para detectar ecos débiles." style="width:215px"><span class="emoji">🛰️</span><b>Radar y sonar</b><br><span class="hint">detectan pulsos</span></div>
+  </div>
+  <div id="app-detail" class="card mono" style="max-width:820px;margin:16px auto 0;font-size:.56em;min-height:2.4em;color:#e2e8f0">
+    Selecciona cualquiera de las 4 tarjetas superiores para inspeccionar su aplicación práctica.
+  </div>
+</section>
+
+<!-- 11 FILTRO -->
+<section id="filt" data-mod="11 · Filtrado de Ruido">
+  <h2>Limpiar el ruido del receptor 🧹</h2>
+  <canvas id="fc" width="860" height="235"></canvas>
+  <div class="legend">
+    <span class="r">● señal con ruido</span>
+    <span class="c">● señal limpia original</span>
+    <span class="g">● salida filtrada (media móvil)</span>
+  </div>
+  <div class="row ctrl" style="margin-top:6px">
+    <label>Ventana M <input type="range" id="fm" min="1" max="21" step="2" value="7"> <b class="y" id="fmv">7</b></label>
+    <span class="badge-stat">Error RMSE: <b id="ferr" class="g">--</b></span>
+    <button class="btn" id="b-clean">🧹 Animar filtro</button>
+    <button class="btn ghost" id="b-noise">🎲 Nuevo ruido</button>
+  </div>
+</section>
+
+<!-- 12 IMÁGENES -->
+<section id="img" data-mod="12 · Convolución 2D (Imágenes)">
+  <h2>Convolución con imágenes 🖼️</h2>
+  <p class="hint">Una imagen es una matriz 2D. Elige un kernel o <b>mueve el cursor sobre la foto original</b> para ver la vecindad 3×3 en vivo.</p>
+  <div class="row" style="margin-top:6px">
+    <div><canvas id="im0" class="im" width="160" height="160"></canvas><div class="hint">Original</div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div id="patch-grid"></div>
+      <div class="hint">Vecindad 3×3</div>
+    </div>
+    <span class="big y">✱</span>
+    <div><div id="kgrid"></div><div class="hint" style="margin-top:4px">Kernel 3×3</div></div>
+    <span class="big g">=</span>
+    <div><canvas id="im1" class="im" width="160" height="160"></canvas><div class="hint">Filtrada</div></div>
+  </div>
+  <div id="im-insp" class="hint mono" style="min-height:1.5em;margin-top:4px">Pasa el mouse sobre la imagen izquierda para inspeccionar los 9 píxeles vecinos</div>
+  <div class="row" style="margin-top:6px">
+    <button class="btn sm kb on" data-k="orig">Original</button>
+    <button class="btn sm kb" data-k="blur">🌫️ Desenfoque</button>
+    <button class="btn sm kb" data-k="edge">✏️ Bordes</button>
+    <button class="btn sm kb" data-k="sharp">🔍 Nitidez</button>
+    <button class="btn sm kb" data-k="emboss">🗿 Relieve</button>
+    <label class="btn sm alt" style="cursor:pointer">📷 Subir foto<input type="file" id="imf" accept="image/*" hidden></label>
+  </div>
+</section>
+
+<!-- 13 QUIZ -->
+<section id="quiz" data-mod="13 · Reto Final">
+  <h2>Nivel final: ¡a jugar! 🎮</h2>
+  <div class="xp"><i id="xpbar"></i></div>
+  <p class="hint" id="xptxt"></p>
+  <div class="card" style="text-align:left;max-width:820px;margin:0 auto">
+    <p id="qtxt" style="font-size:.73em;font-weight:600;color:#fff"></p>
+    <div id="qopts"></div>
+    <p id="qfb" class="hint" style="min-height:2.4em;margin-top:8px"></p>
+    <button class="btn" id="qnext" style="display:none"></button>
+  </div>
+</section>
+
+<!-- 14 CIERRE -->
+<section data-mod="14 · Resumen" data-background-gradient="radial-gradient(circle at 75% 30%,#14532d,#070b16 72%)">
+  <h2>🏆 ¡Nivel desbloqueado!</h2>
+  <div class="row" style="margin:12px 0">
+    <span class="card by"><b class="y">1. Voltea</b></span>
+    <span class="card bc"><b class="c">2. Desliza</b></span>
+    <span class="card bp"><b class="p">3. Multiplica</b></span>
+    <span class="card bg"><b class="g">4. Suma</b></span>
+  </div>
+  <p>El canal mezcla cada bit con sus ecos mediante convolución, y el receptor los separa para recuperar tu mensaje 📡</p>
+  <div class="row" style="margin-top:14px">
+    <span class="hint">Volver a practicar:</span>
+    <button class="btn xs ghost" onclick="Reveal.slide(4)">🕹️ 4 Movimientos</button>
+    <button class="btn xs ghost" onclick="Reveal.slide(5)">🎬 Simulador</button>
+    <button class="btn xs ghost" onclick="Reveal.slide(6)">📶 Canal ISI</button>
+    <button class="btn xs ghost" onclick="Reveal.slide(7)">🔊 Audio</button>
+    <button class="btn xs ghost" onclick="Reveal.slide(11)">🖼️ Imágenes 2D</button>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <button class="btn ok" id="b-party">🎉 Celebrar</button>
+    <button class="btn ghost" id="b-restart">🔄 Volver al inicio</button>
+  </div>
+</section>
+
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  Reveal.initialize({
+    hash:true,
+    slideNumber:'c/t',
+    transition:'convex',
+    backgroundTransition:'fade',
+    controls:true,
+    progress:true,
+    center:true,
+    width:1100,
+    height:720
+  });
+
+  const $=id=>document.getElementById(id);
+  const party=()=>{if(window.confetti)confetti({particleCount:140,spread:80,origin:{y:.65}})};
+
+  /* Evitar que inputs disparen atajos de Reveal.js */
+  document.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("keydown",e=>e.stopPropagation());
+  });
+
+  /* Helper HiDPI */
+  function hiDPI(canvas,w,h){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=w*dpr;
+    canvas.height=h*dpr;
+    canvas.style.width=w+"px";
+    const ctx=canvas.getContext("2d");
+    ctx.scale(dpr,dpr);
+    return ctx;
+  }
+
+  /* Utilidades matemáticas y dibujo */
+  const conv=(a,b)=>{
+    const y=Array(a.length+b.length-1).fill(0);
+    a.forEach((v,i)=>b.forEach((w,j)=>y[i+j]+=v*w));
+    return y.map(v=>Math.round(v*1e3)/1e3);
+  };
+  const parse=(t,f)=>{
+    const a=t.split(",").map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
+    return a.length?a.slice(0,8):f;
+  };
+  function stem(c,x,y0,v,k,col,r=5.2,glow=false){
+    c.save();
+    if(glow){c.shadowColor=col;c.shadowBlur=12}
+    c.strokeStyle=col;c.fillStyle=col;c.lineWidth=3.2;
+    c.beginPath();c.moveTo(x,y0);c.lineTo(x,y0-v*k);c.stroke();
+    c.beginPath();c.arc(x,y0-v*k,r,0,Math.PI*2);c.fill();
+    c.restore();
+  }
+
+  /* Audio FX */
+  let AC=null,mute=false;
+  const ctxA=()=>{
+    if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==="suspended")AC.resume();
+    return AC;
+  };
+  function beep(f,d=.14,type="sine",v=.12,t0=0){
+    if(mute)return;
+    try{
+      const a=ctxA(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+t0;
+      o.type=type;o.frequency.value=f;
+      g.gain.setValueAtTime(v,t);
+      g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.connect(g).connect(a.destination);
+      o.start(t);o.stop(t+d);
+    }catch(e){}
+  }
+  const tick=v=>beep(290+Math.abs(v)*115,.11,"triangle",.09);
+  const sfx=ok=>ok?[523.25,659.25,783.99].forEach((f,i)=>beep(f,.16,"sine",.13,i*.08)):beep(155,.28,"sawtooth",.09);
+  $("snd").onclick=()=>{mute=!mute;$("snd").textContent=mute?"🔇":"🔊"};
+  $("b-ov").onclick=()=>Reveal.toggleOverview();
+  $("b-start").onclick=()=>{beep(523,.1,"sine",.08);Reveal.next()};
+  $("b-party").onclick=party;
+  $("b-restart").onclick=()=>Reveal.slide(0);
+
+  /* 1. PORTADA INTERACTIVA */
+  const covEl=$("cover"),cx0=hiDPI(covEl,700,125);
+  let off=0,mouseX=-1,mouseAmp=0,ripples=[];
+  covEl.addEventListener("mousemove",e=>{
+    const r=covEl.getBoundingClientRect();
+    mouseX=(e.clientX-r.left)*(700/r.width);
+    mouseAmp=1;
+  });
+  covEl.addEventListener("mouseleave",()=>{mouseX=-1});
+  covEl.addEventListener("click",e=>{
+    const r=covEl.getBoundingClientRect();
+    const x=(e.clientX-r.left)*(700/r.width);
+    ripples.push({x,t:0});
+    beep(620,.12,"sine",.07);
+  });
+  (function loop(){
+    cx0.clearRect(0,0,700,125);
+    mouseAmp*=.94;
+    ripples.forEach(rp=>rp.t+=.04);
+    ripples=ripples.filter(rp=>rp.t<1);
+
+    [["#22d3ee",0,27],["#c084fc",1.3,21],["#4ade80",2.6,15]].forEach(([col,ph,amp],idx)=>{
+      cx0.save();
+      cx0.strokeStyle=col;cx0.lineWidth=idx===0?3.2:2.2;
+      cx0.shadowColor=col;cx0.shadowBlur=10;
+      cx0.beginPath();
+      for(let x=0;x<=700;x+=3){
+        const hoverR=mouseX>=0?Math.exp(-Math.pow((x-mouseX)/55,2))*18*mouseAmp*Math.sin(x*.15-off*4):0;
+        let clickR=0;
+        ripples.forEach(rp=>{
+          const dist=Math.abs(x-rp.x)-rp.t*260;
+          clickR+=Math.exp(-Math.pow(dist/24,2))*22*(1-rp.t)*Math.cos(dist*.2);
+        });
+        const y=62+Math.sin(x*.032+off+ph)*amp*Math.sin(x*.007+off*.25)+hoverR+clickR;
+        x?cx0.lineTo(x,y):cx0.moveTo(x,y);
+      }
+      cx0.stroke();
+      cx0.restore();
+    });
+    for(let x=35;x<680;x+=35){
+      const y=62+Math.sin(x*.032+off)*27*Math.sin(x*.007+off*.25);
+      cx0.fillStyle="rgba(34,211,238,.8)";
+      cx0.beginPath();cx0.arc(x,y,3.2,0,Math.PI*2);cx0.fill();
+    }
+    off+=.045;
+    requestAnimationFrame(loop);
+  })();
+
+  /* 2. ANIMACIÓN CIUDAD MULTITRAYECTO */
+  const cityC=hiDPI($("cityc"),780,145);
+  let pulseT=-1,cityRaf=null;
+  function drawBuilding(x,w,h,col){
+    const y=126-h;
+    cityC.fillStyle="rgba(15,23,42,.92)";
+    cityC.strokeStyle=col;cityC.lineWidth=1.4;
+    cityC.fillRect(x-w/2,y,w,h);
+    cityC.strokeRect(x-w/2,y,w,h);
+    cityC.fillStyle="rgba(253,224,71,.35)";
+    for(let wy=y+8;wy<118;wy+=11){
+      for(let wx=x-w/2+6;wx<x+w/2-6;wx+=9){
+        cityC.fillRect(wx,wy,4,5);
+      }
+    }
+  }
+  function drawCity(){
+    cityC.clearRect(0,0,780,145);
+    /* Suelo */
+    cityC.strokeStyle="rgba(255,255,255,.15)";cityC.lineWidth=1;
+    cityC.beginPath();cityC.moveTo(20,126);cityC.lineTo(575,126);cityC.stroke();
+
+    const tx=65,ty=94,rx=535,ry=94;
+    const paths=[
+      {bx:220,by:72,bw:34,bh:54,col:"#22d3ee",delay:0,amp:1.0,name:"t=0"},
+      {bx:310,by:48,bw:38,bh:78,col:"#c084fc",delay:.24,amp:0.55,name:"t=1"},
+      {bx:405,by:30,bw:42,bh:96,col:"#fde047",delay:.48,amp:0.28,name:"t=2"}
+    ];
+
+    paths.forEach(p=>{
+      drawBuilding(p.bx,p.bw,p.bh,p.col);
+      cityC.strokeStyle="rgba(255,255,255,.14)";
+      cityC.setLineDash([4,4]);cityC.lineWidth=1.4;
+      cityC.beginPath();cityC.moveTo(tx,ty);cityC.lineTo(p.bx,p.by);cityC.lineTo(rx,ry);cityC.stroke();
+      cityC.setLineDash([]);
+    });
+
+    /* Ondas saliendo de la antena */
+    if(pulseT>=0&&pulseT<.5){
+      cityC.strokeStyle=`rgba(34,211,238,${1-pulseT*2})`;cityC.lineWidth=2;
+      cityC.beginPath();cityC.arc(tx,ty,14+pulseT*70,-Math.PI*.45,Math.PI*.2);cityC.stroke();
+    }
+
+    cityC.font="30px serif";cityC.textAlign="center";
+    cityC.fillText("📡",tx,ty+10);
+    cityC.fillText("📱",rx,ry+10);
+
+    /* Mini respuesta al impulso h[n] a la derecha */
+    const gx=615,gz=112;
+    cityC.strokeStyle="#475569";cityC.lineWidth=1.2;
+    cityC.beginPath();cityC.moveTo(gx-10,gz);cityC.lineTo(gx+135,gz);cityC.stroke();
+    cityC.font="11px 'Fira Code',monospace";cityC.fillStyle="#94a3b8";
+    cityC.fillText("canal h[n]",gx+62,135);
+
+    paths.forEach((p,i)=>{
+      const sx=gx+20+i*44;
+      let arrived=false;
+      if(pulseT>=0){
+        const local=pulseT-p.delay;
+        if(local>=0&&local<=1){
+          const px=local<.5?tx+(p.bx-tx)*(local*2):p.bx+(rx-p.bx)*((local-.5)*2);
+          const py=local<.5?ty+(p.by-ty)*(local*2):p.by+(ry-p.by)*((local-.5)*2);
+          cityC.save();
+          cityC.fillStyle=p.col;cityC.shadowColor=p.col;cityC.shadowBlur=14;
+          cityC.beginPath();cityC.arc(px,py,5+p.amp*3.2,0,Math.PI*2);cityC.fill();
+          cityC.restore();
+        }
+        if(local>=.95)arrived=true;
+      }else{
+        arrived=true;
+      }
+      if(arrived){
+        stem(cityC,sx,gz,p.amp,68,p.col,4.8,pulseT>=0);
+        cityC.fillStyle=p.col;cityC.font="10px 'Fira Code',monospace";
+        cityC.fillText(p.amp.toFixed(2),sx,gz-p.amp*68-9);
+        cityC.fillStyle="#94a3b8";
+        cityC.fillText(p.name,sx,gz+13);
+      }
+    });
+
+    if(pulseT>=0){
+      pulseT+=.017;
+      if(pulseT<=1.65)cityRaf=requestAnimationFrame(drawCity);
+      else pulseT=-1;
+    }
+  }
+  function firePulse(){
+    cancelAnimationFrame(cityRaf);
+    pulseT=0;
+    beep(580,.1,"sine",.08);
+    drawCity();
+  }
+  $("b-pulse").onclick=firePulse;
+  drawCity();
+
+  /* 3. PERSONAJES INTERACTIVOS */
+  const roleMsgs={
+    x:"x[n] es la secuencia discreta de símbolos o muestras que transmite la antena.",
+    h:"h[n] es la respuesta al impulso del canal: cada coeficiente mide un eco y su retardo.",
+    y:"y[n] = x[n] * h[n] es la mezcla resultante que mide el receptor."
+  };
+  document.querySelectorAll("#chars .card.interactive").forEach(c=>{
+    c.onclick=()=>{
+      document.querySelectorAll("#chars .card.interactive").forEach(el=>el.classList.remove("active"));
+      c.classList.add("active");
+      $("char-note").textContent=roleMsgs[c.dataset.role];
+      beep(460,.1,"sine",.07);
+    };
+  });
+
+  /* 5. TARJETAS INTERACTIVAS 3D FLIP (4 MOVIMIENTOS) */
+  const flipCards=[...document.querySelectorAll(".flip-card")];
+  const stepNotes=[330,440,554.37,659.25];
+  let seqTimers=[];
+  const clearSeqTimers=()=>{seqTimers.forEach(t=>clearTimeout(t));seqTimers=[]};
+
+  function toggleCard(idx){
+    const card=flipCards[idx];
+    if(!card)return;
+    clearSeqTimers();
+    const nowFlipped=card.classList.toggle("flipped");
+    beep(stepNotes[idx],.13,nowFlipped?"triangle":"sine",.11);
+    if(nowFlipped&&flipCards.every(c=>c.classList.contains("flipped"))){
+      setTimeout(()=>sfx(true),180);
+    }
+  }
+  flipCards.forEach((card,idx)=>{
+    card.addEventListener("click",()=>toggleCard(idx));
+  });
+  document.addEventListener("keydown",e=>{
+    if((Reveal.getCurrentSlide()||{}).id==="steps"&&["1","2","3","4"].includes(e.key)){
+      toggleCard(parseInt(e.key,10)-1);
+    }
+  });
+
+  $("b-seq-flip").onclick=()=>{
+    clearSeqTimers();
+    flipCards.forEach(c=>c.classList.remove("flipped"));
+    flipCards.forEach((c,idx)=>{
+      seqTimers.push(setTimeout(()=>{
+        c.classList.add("flipped");
+        beep(stepNotes[idx],.15,"triangle",.12);
+        if(idx===flipCards.length-1)setTimeout(()=>sfx(true),220);
+      },240+idx*620));
+    });
+  };
+
+  $("b-all-flip").onclick=()=>{
+    clearSeqTimers();
+    const anyUnflipped=flipCards.some(c=>!c.classList.contains("flipped"));
+    flipCards.forEach((c,idx)=>{
+      c.classList.toggle("flipped",anyUnflipped);
+      beep(stepNotes[idx],.1,"sine",.06,idx*.05);
+    });
+  };
+
+  /* 6. SIMULADOR DE DOS PISTAS ALINEADAS */
+  let X=[1,0,1,1],H=[1,.5,.25],Y=conv(X,H),n=0,timer=null,simSpeed=1300;
+  const simEl=$("simc"),s=hiDPI(simEl,860,255);
+  let yTargets=[];
+
+  function drawSim(){
+    s.clearRect(0,0,860,255);
+    const minK=-(H.length-1),maxK=X.length+H.length-1,st=485/(maxK-minK+2);
+    const mx=Math.max(1,...X.map(Math.abs),...H.map(Math.abs)),k=44/mx;
+    const zTop=74,zBot=185;
+
+    /* Etiquetas de pista izquierda */
+    s.font="bold 11px 'Fira Code',monospace";s.textAlign="left";
+    s.fillStyle="#22d3ee";s.fillText("x[k] (fija)",18,18);
+    s.fillStyle="#c084fc";s.fillText("h[n−k] (desliza)",18,128);
+
+    /* Ejes de ambas pistas */
+    s.strokeStyle="#475569";s.lineWidth=1.1;
+    [zTop,zBot].forEach(z=>{s.beginPath();s.moveTo(18,z);s.lineTo(505,z);s.stroke()});
+
+    s.font="11px 'Fira Code',monospace";s.textAlign="center";
+    for(let i=minK;i<=maxK;i++){
+      const px=22+(i-minK+1)*st,hx=i>=0&&i<X.length,hi=n-i,hh=hi>=0&&hi<H.length;
+      if(hx&&hh){
+        s.fillStyle="rgba(253,224,71,.12)";
+        s.fillRect(px-st*.45,22,st*.9,192);
+        s.strokeStyle="rgba(253,224,71,.38)";
+        s.setLineDash([3,3]);
+        s.beginPath();s.moveTo(px,zTop+4);s.lineTo(px,zBot-H[hi]*k-6);s.stroke();
+        s.setLineDash([]);
+      }
+      s.fillStyle=(hx&&hh)?"#fde047":"#94a3b8";
+      s.fillText("k="+i,px,205);
+
+      if(hx){
+        stem(s,px,zTop,X[i],k,"#22d3ee",4.5,hx&&hh);
+        s.fillStyle="#22d3ee";s.fillText(X[i],px,zTop-X[i]*k-9);
+      }
+      if(hh){
+        stem(s,px,zBot,H[hi],k,"#c084fc",4.5,hx&&hh);
+        s.fillStyle="#c084fc";s.fillText(H[hi],px,zBot-H[hi]*k-9);
+      }
+    }
+
+    /* Separador vertical */
+    s.strokeStyle="rgba(255,255,255,.12)";
+    s.beginPath();s.moveTo(520,16);s.lineTo(520,235);s.stroke();
+
+    /* Panel derecho y[n] */
+    const my=Math.max(1,...Y.map(Math.abs)),ky=96/my,st2=305/(Y.length+1),z2=162;
+    s.strokeStyle="#475569";s.lineWidth=1.2;
+    s.beginPath();s.moveTo(535,z2);s.lineTo(840,z2);s.stroke();
+    yTargets=[];
+    Y.forEach((v,m)=>{
+      const px=535+(m+1)*st2,done=m<=n,act=m===n;
+      yTargets.push({px,m});
+      stem(s,px,z2,done?v:0,ky,act?"#fde047":"#4ade80",act?7.5:5,act);
+      s.fillStyle=act?"#fde047":(done?"#f8fafc":"#64748b");
+      s.fillText("n="+m,px,z2+26);
+      if(done){
+        s.fillStyle=act?"#fde047":"#4ade80";
+        s.fillText(v,px,z2-v*ky-13);
+      }
+    });
+    s.fillStyle="#4ade80";s.font="bold 13px 'Fredoka',sans-serif";
+    s.fillText("Salida y[n] acumulada",688,24);
+
+    const terms=[],prods=[];
+    X.forEach((v,i)=>{
+      const j=n-i;
+      if(j>=0&&j<H.length){
+        terms.push(`(${v}×${H[j]})`);
+        prods.push(Math.round(v*H[j]*1e3)/1e3);
+      }
+    });
+    $("sim-expl").innerHTML=
+      `<span class="y">Instante n = ${n}</span> → solapan: ${terms.join(" + ")||"ninguno"}`+
+      (prods.length>1?` = ${prods.join(" + ")}`:"")+
+      ` = <b class="g" style="font-size:1.15em">y[${n}] = ${Y[n]}</b>`;
+  }
+  simEl.addEventListener("click",e=>{
+    const r=simEl.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(860/r.width);
+    if(cx>520&&yTargets.length){
+      let best=yTargets[0];
+      yTargets.forEach(t=>{if(Math.abs(t.px-cx)<Math.abs(best.px-cx))best=t});
+      stop();n=best.m;drawSim();tick(Y[n]);
+    }
+  });
+  const stop=()=>{clearInterval(timer);timer=null;$("b-play").textContent="▶️ Reproducir"};
+  const play=()=>{
+    stop();$("b-play").textContent="⏸ Pausa";
+    timer=setInterval(()=>{
+      if(n<Y.length-1){n++;drawSim();tick(Y[n])}
+      else{stop();party();sfx(true)}
+    },simSpeed);
+  };
+  $("b-play").onclick=()=>{if(timer)stop();else{if(n>=Y.length-1)n=0;drawSim();play()}};
+  $("b-prev").onclick=()=>{stop();n=Math.max(0,n-1);drawSim();tick(Y[n])};
+  $("b-next").onclick=()=>{stop();n=Math.min(Y.length-1,n+1);drawSim();tick(Y[n])};
+  $("b-spd").onclick=()=>{
+    if(simSpeed===1300){simSpeed=650;$("b-spd").textContent="2×"}
+    else if(simSpeed===650){simSpeed=2200;$("b-spd").textContent="0.5×"}
+    else{simSpeed=1300;$("b-spd").textContent="1×"}
+    if(timer)play();
+  };
+  const applySim=(xv,hv)=>{
+    X=parse(xv,[1,0,1,1]);H=parse(hv,[1,.5,.25]);Y=conv(X,H);n=0;
+    $("ix").value=X.join(", ");$("ih").value=H.join(", ");
+    drawSim();play();
+  };
+  $("b-upd").onclick=()=>applySim($("ix").value,$("ih").value);
+  document.querySelectorAll(".preset-sim").forEach(b=>{
+    b.onclick=()=>applySim(b.dataset.x,b.dataset.h);
+  });
+  drawSim();
+
+  /* 7. CANAL MULTITRAYECTO + ECUALIZADOR */
+  const ch=hiDPI($("cc"),860,245);
+  let B=[1,0,1,1,0,1,0,0],eqOn=false;
+  function chan(){
+    const a=+$("ca").value,d=+$("cd").value;
+    $("cav").textContent=a.toFixed(2);$("cdv").textContent=d;
+    const h=Array(d+1).fill(0);h[0]=1;h[d]=a;
+    const y=conv(B,h),L=y.length,st=760/(L+1);
+
+    const yProc=[...y],dec=[];
+    for(let i=0;i<B.length;i++){
+      if(eqOn&&i>=d)yProc[i]=Math.round((yProc[i]-a*dec[i-d])*100)/100;
+      dec.push(yProc[i]>=.5?1:0);
+    }
+
+    ch.clearRect(0,0,860,245);
+    ch.font="12px 'Fira Code',monospace";ch.textAlign="center";
+    const zt=88,zr=215,kt=52,kr=44;
+    ch.strokeStyle="#475569";ch.lineWidth=1.1;
+    [zt,zr].forEach(z=>{ch.beginPath();ch.moveTo(30,z);ch.lineTo(830,z);ch.stroke()});
+
+    ch.setLineDash([6,5]);ch.strokeStyle="#fde047";
+    ch.beginPath();ch.moveTo(30,zr-.5*kr);ch.lineTo(830,zr-.5*kr);ch.stroke();
+    ch.setLineDash([]);
+
+    ch.fillStyle="#22d3ee";ch.textAlign="left";ch.fillText("Bits enviados x[n]",32,18);
+    ch.fillStyle=eqOn?"#c084fc":"#4ade80";
+    ch.fillText(eqOn?"Señal ecualizada (eco restado)":"Señal recibida y[n] = x[n] * h[n]",32,130);
+    ch.fillStyle="#fde047";ch.textAlign="right";ch.fillText("umbral 0.5",828,zr-.5*kr-6);
+    ch.textAlign="center";
+
+    let err=0;
+    for(let i=0;i<L;i++){
+      const px=44+(i+1)*st;
+      if(i<B.length){
+        stem(ch,px,zt,B[i],kt,"#22d3ee",5);
+        ch.fillStyle="#22d3ee";ch.fillText(B[i],px,zt-B[i]*kt-11);
+      }
+      const val=i<B.length?yProc[i]:y[i];
+      const bad=i<B.length&&(dec[i]!==B[i]);
+      if(bad)err++;
+      const col=i>=B.length?"#64748b":(bad?"#fb7185":(eqOn?"#c084fc":"#4ade80"));
+      stem(ch,px,zr,Math.max(0,val),kr,col,5,bad);
+      if(i<B.length){
+        ch.fillText(bad?"❌":"✅",px,118);
+        ch.fillStyle="#94a3b8";ch.fillText(val.toFixed(2),px,zr+16);
+      }else{
+        ch.fillStyle="#64748b";ch.fillText("cola",px,zr+16);
+      }
+    }
+    $("cout").innerHTML=err===0
+      ?`<span class="g">✅ ¡0 errores!</span> ${eqOn?"El ecualizador restó el eco a·x[n−"+d+"] y salvó todos los bits.":"El eco aún no supera el umbral de decisión (0.5)."}`
+      :`<span class="r">❌ ${err} bit(s) corrupto(s) por ISI.</span> El eco de un 1 anterior empujó un 0 por encima de 0.5. ¡Activa el ecualizador!`;
+    if(err===0&&a>=.55&&!eqOn&&Reveal.getCurrentSlide().id==="chan"&&!chan.done){chan.done=1;party()}
+  }
+  $("ca").oninput=chan;$("cd").oninput=chan;
+  $("b-bits").onclick=()=>{B=Array.from({length:8},()=>Math.round(Math.random()));chan()};
+  $("b-eq").onclick=()=>{
+    eqOn=!eqOn;
+    $("b-eq").textContent=eqOn?"🎛️ Ecualizador: ON":"🎛️ Ecualizador: OFF";
+    $("b-eq").classList.toggle("on",eqOn);
+    beep(eqOn?660:440,.12,"triangle",.1);
+    chan();
+  };
+  chan();
+
+  /* 8. AUDIO CON CONVOLVERNODE Y PLAYHEAD ANIMADO */
+  const notes=[523.25,659.25,783.99],noteNames=["Do5","Mi5","Sol5"];
+  const audC=hiDPI($("ac"),860,190);
+  let audRaf=null;
+  function audDraw(playPos=-1){
+    const a=+$("aa").value,d=+$("ad").value;
+    $("aav").textContent=a.toFixed(2);$("adv").textContent=d+" ms";
+    audC.clearRect(0,0,860,190);
+    const z=168,sx=760/1.75;
+    audC.strokeStyle="#475569";audC.lineWidth=1;
+    audC.beginPath();audC.moveTo(30,z);audC.lineTo(830,z);audC.stroke();
+
+    [0,1,2].forEach(r=>{
+      const amp=Math.pow(a,r);
+      if(r>0&&amp<.04)return;
+      notes.forEach((f,i)=>{
+        const x=50+(i*.25+r*d/1000)*sx,h=124*amp;
+        audC.fillStyle=r===0?"#22d3ee":`rgba(192,132,252,${.28+.62*amp})`;
+        audC.beginPath();
+        audC.roundRect?audC.roundRect(x-12,z-h,24,h,5):audC.fillRect(x-12,z-h,24,h);
+        audC.fill();
+        if(r===0){
+          audC.fillStyle="#cbd5e1";audC.font="11px 'Fira Code',monospace";audC.textAlign="center";
+          audC.fillText(noteNames[i],x,z+15);
+        }
+      });
+    });
+
+    if(playPos>=0){
+      const px=50+playPos*sx;
+      audC.save();
+      audC.strokeStyle="#fde047";audC.lineWidth=2.5;
+      audC.shadowColor="#fde047";audC.shadowBlur=10;
+      audC.beginPath();audC.moveTo(px,14);audC.lineTo(px,z+4);audC.stroke();
+      audC.restore();
+    }
+    audC.fillStyle="#94a3b8";audC.font="12px 'Fira Code',monospace";audC.textAlign="right";
+    audC.fillText("tiempo (s) →",828,184);
+  }
+  function audPlay(wet){
+    if(mute)return;
+    cancelAnimationFrame(audRaf);
+    const a=+$("aa").value,d=+$("ad").value/1000,A=ctxA(),sr=A.sampleRate;
+    const totalDur=wet?(0.75+2*d+0.35):0.85;
+    const buf=A.createBuffer(1,Math.floor(2.6*sr),sr),chData=buf.getChannelData(0);
+    notes.forEach((f,i)=>{
+      const s0=Math.floor(i*.25*sr);
+      for(let j=0;j<.22*sr;j++)chData[s0+j]+=Math.sin(2*Math.PI*f*j/sr)*Math.exp(-j/sr*11)*.28;
+    });
+    const src=A.createBufferSource();src.buffer=buf;
+    const limiter=A.createGain();limiter.gain.value=.85;
+    if(wet){
+      const n2=Math.floor(2*d*sr)+1,ir=A.createBuffer(1,n2,sr),h=ir.getChannelData(0);
+      h[0]=1;h[Math.floor(d*sr)]=a;h[n2-1]=a*a;
+      const cv=A.createConvolver();cv.normalize=false;cv.buffer=ir;
+      src.connect(cv).connect(limiter).connect(A.destination);
+    }else{
+      src.connect(limiter).connect(A.destination);
+    }
+    src.start();
+    const tStart=performance.now();
+    (function anim(){
+      const el=(performance.now()-tStart)/1000;
+      if(el<=totalDur){audDraw(el);audRaf=requestAnimationFrame(anim)}
+      else audDraw(-1);
+    })();
+  }
+  $("aa").oninput=()=>audDraw(-1);
+  $("ad").oninput=()=>audDraw(-1);
+  $("b-dry").onclick=()=>audPlay(0);
+  $("b-wet").onclick=()=>audPlay(1);
+  document.querySelectorAll(".preset-aud").forEach(b=>{
+    b.onclick=()=>{$("aa").value=b.dataset.a;$("ad").value=b.dataset.d;audDraw(-1);audPlay(1)};
+  });
+  audDraw(-1);
+
+  /* 9 & 10. INTERACTIVIDAD EN RESULTADOS Y APLICACIONES */
+  document.querySelectorAll("#res-cards .card").forEach(c=>{
+    c.onclick=()=>{
+      document.querySelectorAll("#res-cards .card").forEach(el=>el.classList.remove("active"));
+      c.classList.add("active");
+      $("res-detail").textContent=c.dataset.calc;
+      beep(520,.1,"triangle",.07);
+    };
+  });
+  document.querySelectorAll("#apps .card").forEach(c=>{
+    c.onclick=()=>{
+      document.querySelectorAll("#apps .card").forEach(el=>el.classList.remove("active"));
+      c.classList.add("active");
+      $("app-detail").textContent=c.dataset.app;
+      beep(480,.1,"sine",.07);
+    };
+  });
+
+  /* 11. FILTRO DE MEDIA MÓVIL + MÉTRICA RMSE */
+  const f=hiDPI($("fc"),860,235);
+  let fRaf=null,noiseSeed=1;
+  function cleanDemo(anim=true){
+    cancelAnimationFrame(fRaf);
+    const N=150,M=+$("fm").value;$("fmv").textContent=M;
+    const o=[],ny=[];
+    for(let i=0;i<N;i++){
+      const c=Math.sin(2*Math.PI*2.1*i/N);
+      const nVal=.34*Math.sin(i*1.9+noiseSeed)+.26*Math.cos(i*3.7-noiseSeed*1.3)+.20*Math.sin(i*6.3+noiseSeed*.7);
+      o.push(c);ny.push(c+nVal);
+    }
+    const full=conv(ny,Array(M).fill(1/M));
+    const fl=o.map((_,i)=>full[Math.min(N+M-2,i+Math.floor((M-1)/2))]);
+
+    const rmse=Math.sqrt(fl.reduce((acc,v,i)=>acc+Math.pow(v-o[i],2),0)/N);
+    const errEl=$("ferr");
+    errEl.textContent=rmse.toFixed(3);
+    errEl.className=rmse<.12?"g":(rmse<.22?"y":"r");
+
+    let p=anim?0:N;
+    (function frame(){
+      f.clearRect(0,0,860,235);
+      f.strokeStyle="#334155";f.lineWidth=1;
+      f.beginPath();f.moveTo(30,118);f.lineTo(830,118);f.stroke();
+      const line=(d,col,w,upto)=>{
+        f.strokeStyle=col;f.lineWidth=w;f.beginPath();
+        for(let i=0;i<=upto;i++){
+          const x=30+i/(N-1)*800,y=118-Math.max(-1.6,Math.min(1.6,d[i]))*68;
+          i?f.lineTo(x,y):f.moveTo(x,y);
+        }
+        f.stroke();
+      };
+      line(ny,"rgba(251,113,133,.65)",1.5,N-1);
+      line(o,"#22d3ee",2,N-1);
+      line(fl,"#4ade80",3.8,Math.min(N-1,Math.floor(p)));
+      if(anim){p+=1.6;if(p<N)fRaf=requestAnimationFrame(frame);else if(rmse<.12)party()}
+    })();
+  }
+  $("b-clean").onclick=()=>cleanDemo(true);
+  $("b-noise").onclick=()=>{noiseSeed+=2.3;cleanDemo(false)};
+  $("fm").oninput=()=>cleanDemo(false);
+
+  /* 12. IMÁGENES 2D + INSPECTOR DE VECINDAD 3x3 EN VIVO */
+  const KS={
+    orig:[0,0,0,0,1,0,0,0,0],
+    blur:[1,1,1,1,1,1,1,1,1],
+    edge:[-1,-1,-1,-1,8,-1,-1,-1,-1],
+    sharp:[0,-1,0,-1,5,-1,0,-1,0],
+    emboss:[-2,-1,0,-1,1,1,0,1,2]
+  };
+  const S=160,im0El=$("im0"),ic=im0El.getContext("2d"),oc=$("im1").getContext("2d");
+  let OFF=0,imgReady=false,baseImageData=null;
+  function imgDraw(im){
+    if(im){ic.drawImage(im,0,0,S,S)}
+    else{
+      const g=ic.createLinearGradient(0,0,0,S);
+      g.addColorStop(0,"#1e3a8a");g.addColorStop(1,"#f472b6");
+      ic.fillStyle=g;ic.fillRect(0,0,S,S);
+      ic.fillStyle="#fde047";ic.beginPath();ic.arc(125,38,20,0,Math.PI*2);ic.fill();
+      ic.fillStyle="#0f172a";
+      ic.fillRect(18,105,18,55);ic.fillRect(50,125,14,35);
+      ic.fillRect(88,95,24,65);ic.fillRect(124,112,22,48);
+      ic.font="56px serif";ic.fillText("📡",36,100);
+    }
+    baseImageData=ic.getImageData(0,0,S,S);
+    imgApply();
+  }
+  function imgApply(){
+    if(!baseImageData)return;
+    const k=[...document.querySelectorAll(".kc")].map(e=>+e.value||0);
+    const sum=k.reduce((p,q)=>p+q,0)||1;
+    const dst=oc.createImageData(S,S),D=baseImageData.data;
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      const o=(y*S+x)*4;
+      for(let c=0;c<3;c++){
+        let v=0;
+        for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){
+          const xx=Math.min(S-1,Math.max(0,x+i)),yy=Math.min(S-1,Math.max(0,y+j));
+          v+=D[(yy*S+xx)*4+c]*k[(1-j)*3+(1-i)];
+        }
+        dst.data[o+c]=Math.min(255,Math.max(0,v/sum+OFF));
+      }
+      dst.data[o+3]=255;
+    }
+    oc.putImageData(dst,0,0);
+  }
+  function setK(key){
+    const k=KS[key];OFF=key==="emboss"?128:0;
+    document.querySelectorAll(".kc").forEach((e,i)=>e.value=k[i]);
+    document.querySelectorAll(".kb").forEach(b=>b.classList.toggle("on",b.dataset.k===key));
+    imgApply();
+    if(key!=="orig")beep(380+Object.keys(KS).indexOf(key)*115,.13,"square",.05);
+  }
+  function renderPatch(px,py){
+    const pg=$("patch-grid");
+    if(!baseImageData){
+      pg.innerHTML=Array.from({length:9},()=>`<div style="background:rgba(255,255,255,.05);color:#64748b">·</div>`).join("");
+      return;
+    }
+    const D=baseImageData.data,cells=[];
+    for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){
+      const xx=Math.min(S-1,Math.max(0,px+i)),yy=Math.min(S-1,Math.max(0,py+j));
+      const idx=(yy*S+xx)*4,r=D[idx],g=D[idx+1],b=D[idx+2];
+      const lum=Math.round(.299*r+.587*g+.114*b);
+      const txtCol=lum>135?"#090d1a":"#f8fafc";
+      cells.push(`<div style="background:rgb(${r},${g},${b});color:${txtCol}">${lum}</div>`);
+    }
+    pg.innerHTML=cells.join("");
+  }
+  function imgInit(){
+    if(imgReady)return;imgReady=true;
+    $("kgrid").innerHTML=Array.from({length:9},()=>`<input class="kc" type="number" step="any">`).join("");
+    renderPatch(80,80);
+    document.querySelectorAll(".kc").forEach(e=>{
+      e.addEventListener("keydown",ev=>ev.stopPropagation());
+      e.oninput=()=>{document.querySelectorAll(".kb").forEach(b=>b.classList.remove("on"));imgApply()};
+    });
+    document.querySelectorAll(".kb").forEach(b=>b.onclick=()=>setK(b.dataset.k));
+    $("imf").onchange=e=>{
+      const fl=e.target.files[0];if(!fl)return;
+      const r=new FileReader();
+      r.onload=()=>{const im=new Image();im.onload=()=>imgDraw(im);im.src=r.result};
+      r.readAsDataURL(fl);
+    };
+    im0El.addEventListener("mousemove",e=>{
+      if(!baseImageData)return;
+      const rect=im0El.getBoundingClientRect();
+      const px=Math.min(S-2,Math.max(1,Math.floor((e.clientX-rect.left)*(S/rect.width))));
+      const py=Math.min(S-2,Math.max(1,Math.floor((e.clientY-rect.top)*(S/rect.height))));
+      ic.putImageData(baseImageData,0,0);
+      ic.strokeStyle="#fde047";ic.lineWidth=2;
+      ic.strokeRect(px-3,py-3,7,7);
+      renderPatch(px,py);
+      const outPx=oc.getImageData(px,py,1,1).data;
+      const inPx=baseImageData.data,idx=(py*S+px)*4;
+      $("im-insp").innerHTML=
+        `Píxel (<span class="c">${px},${py}</span>) · Entrada RGB(${inPx[idx]},${inPx[idx+1]},${inPx[idx+2]}) → Salida <b class="g">RGB(${outPx[0]},${outPx[1]},${outPx[2]})</b>`;
+    });
+    im0El.addEventListener("mouseleave",()=>{
+      if(baseImageData)ic.putImageData(baseImageData,0,0);
+      $("im-insp").textContent="Pasa el mouse sobre la imagen izquierda para inspeccionar los 9 píxeles vecinos";
+    });
+    setK("orig");imgDraw();
+  }
+
+  /* 13. QUIZ GAMIFICADO (5 PREGUNTAS + RACHA + ATAJOS A/B/C) */
+  const Q=[
+    {q:"1. Un canal ideal deja pasar la señal intacta: h[n] = δ[n]. ¿Qué recibes?",o:["Silencio absoluto","Exactamente la señal enviada x[n]","La señal invertida en el tiempo"],a:1,e:"x[n] * δ[n] = x[n]: el impulso unitario es el elemento neutro de la convolución."},
+    {q:"2. Si un edificio produce un único eco retardado 2 muestras (h[n] = δ[n−2]), ¿qué pasa?",o:["La señal llega 2 muestras más tarde","La amplitud se multiplica por 2","La señal desaparece"],a:0,e:"Convolucionar con δ[n−2] desplaza toda la señal 2 muestras hacia la derecha."},
+    {q:"3. Envías una trama de 4 bits por un canal con respuesta h[n] de 3 muestras. ¿Cuántas muestras salen?",o:["7 muestras","6 muestras","12 muestras"],a:1,e:"La longitud de salida siempre es Lx + Lh − 1 = 4 + 3 − 1 = 6 muestras."},
+    {q:"4. ¿Por qué los ecos fuertes provocan errores de bit (ISI) en el celular?",o:["Porque cambian la frecuencia de la batería","Porque la cola de un bit se suma encima del bit siguiente","Porque la convolución resta siempre 1"],a:1,e:"La interferencia entre símbolos (ISI) ocurre cuando el eco de un '1' eleva un '0' vecino sobre el umbral."},
+    {q:"5. ¿Qué hace un ecualizador en el receptor de tu teléfono?",o:["Aumenta el ruido blanco","Estima el canal h[n] y cancela los ecos","Elimina la antena"],a:1,e:"Conociendo h[n], el ecualizador invierte el efecto de la convolución del canal."}
+  ];
+  let qi=0,xp=0,streak=0,answered=false;
+  function chooseOpt(i){
+    if(answered)return;answered=true;
+    const q=Q[qi],btns=$("qopts").children;
+    const ok=i===q.a;btns[i].classList.add(ok?"ok":"bad");
+    sfx(ok);
+    if(ok){xp+=100;streak++;party()}
+    else{streak=0;btns[q.a].classList.add("ok")}
+    const stTxt=streak>1?` · 🔥 Racha ×${streak}`:"";
+    $("qfb").innerHTML=(ok?`✅ <b class='g'>¡Correcto! +100 XP${stTxt}.</b> `:"❌ <b class='r'>Casi.</b> ")+q.e;
+    $("xpbar").style.width=(xp/Q.length)+"%";
+    $("xptxt").textContent=`Pregunta ${qi+1} de ${Q.length} · ${xp} XP${stTxt}`;
+    $("qnext").textContent=qi<Q.length-1?"Siguiente pregunta ➜":"Ver mi puntaje final 🏆";
+    $("qnext").style.display="inline-block";
+  }
+  function showQ(){
+    const q=Q[qi];answered=false;
+    $("qtxt").textContent=q.q;$("qfb").textContent="";$("qnext").style.display="none";$("qopts").innerHTML="";
+    q.o.forEach((t,i)=>{
+      const b=document.createElement("button");b.className="opt";
+      b.textContent=String.fromCharCode(65+i)+") "+t;
+      b.onclick=()=>chooseOpt(i);
+      $("qopts").appendChild(b);
+    });
+    const stTxt=streak>1?` · 🔥 Racha ×${streak}`:"";
+    $("xptxt").textContent=`Pregunta ${qi+1} de ${Q.length} · ${xp} XP${stTxt}`;
+  }
+  function nextQ(){
+    if(qi<Q.length-1){qi++;showQ()}
+    else{
+      const maxXp=Q.length*100;
+      const rank=xp===maxXp?"🥇 Rango Oro · Ingeniero/a de RF":(xp>=300?"🥈 Rango Plata · Especialista DSP":"🥉 Rango Bronce · Explorador/a");
+      $("qtxt").textContent=`🏆 ${rank} (${xp}/${maxXp} XP)`;
+      $("qopts").innerHTML="";$("qfb").textContent="¡Excelente trabajo dominando la convolución discreta!";$("qnext").textContent="🔁 Jugar otra vez";
+      $("qnext").onclick=()=>{qi=0;xp=0;streak=0;$("xpbar").style.width="0";$("qnext").onclick=nextQ;showQ()};
+      if(xp===maxXp)party();
+    }
+  }
+  document.addEventListener("keydown",e=>{
+    if((Reveal.getCurrentSlide()||{}).id==="quiz"){
+      const idx=["a","b","c"].indexOf(e.key.toLowerCase());
+      if(idx>=0&&!answered)$("qopts").children[idx]?.click();
+      else if(e.key==="Enter"&&answered)$("qnext").click();
+    }
+  });
+  $("qnext").onclick=nextQ;showQ();
+
+  /* Hooks de cambio de diapositiva */
+  Reveal.on("slidechanged",e=>{
+    const slide=e.currentSlide||{};
+    const id=slide.id;
+    if(slide.dataset&&slide.dataset.mod)$("hud-left").textContent=slide.dataset.mod;
+    if(id==="story")firePulse();
+    if(id==="steps")clearSeqTimers();
+    if(id==="sim"){n=0;drawSim();play()}else stop();
+    if(id==="chan"){chan.done=0;chan()}
+    if(id==="filt")cleanDemo(true);
+    if(id==="aud")audDraw(-1);
+    if(id==="img")imgInit();
+  });
+});
+</script>
+</body>
+</html>
